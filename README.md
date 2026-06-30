@@ -88,7 +88,7 @@ You can delete `data/db.json` to reset the app back to seed data.
 
 ## Production Upgrade Path
 
-This app proves the flow. See `ROADMAP.md` for the full launch plan.
+This app proves the flow. See `ROADMAP.md` for the full launch plan and `DATABASE_SCHEMA.md` for the production database plan.
 
 For production, replace:
 

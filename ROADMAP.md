@@ -116,3 +116,4 @@ Avoid adding chat, horoscope matching automation, video calls, or large communit
 7. Add legal pages and policies.
 8. Add deployment scripts/configuration.
 
+See `DATABASE_SCHEMA.md` for the first production schema plan.
