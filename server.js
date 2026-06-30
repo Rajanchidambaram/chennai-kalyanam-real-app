@@ -2,15 +2,12 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { ensureCollections, ensureDatabase, readDb, resetDb, writeDb } = require("./repositories/jsonDatabase");
 
 const PORT = Number(process.env.PORT || 4174);
 const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
-const DATA_DIR = path.join(ROOT, "data");
-const DB_PATH = path.join(DATA_DIR, "db.json");
-const SEED_PATH = path.join(DATA_DIR, "seed.json");
 const ADMIN_PIN = process.env.ADMIN_PIN || "246810";
-let dbCache = null;
 
 const contentTypes = {
   ".html": "text/html; charset=utf-8",
@@ -22,39 +19,6 @@ const contentTypes = {
   ".jpeg": "image/jpeg",
   ".svg": "image/svg+xml"
 };
-
-function ensureDatabase() {
-  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(DB_PATH)) {
-    fs.copyFileSync(SEED_PATH, DB_PATH);
-  }
-}
-
-function readDb() {
-  ensureDatabase();
-  if (!dbCache) {
-    dbCache = JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
-  }
-  return dbCache;
-}
-
-function ensureCollections(db) {
-  db.adminSessions ||= [];
-  db.shortlists ||= [];
-  db.blocks ||= [];
-}
-
-function writeDb(db) {
-  ensureCollections(db);
-  dbCache = db;
-  fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
-}
-
-function resetDb() {
-  dbCache = JSON.parse(fs.readFileSync(SEED_PATH, "utf8"));
-  writeDb(dbCache);
-  return dbCache;
-}
 
 function sendJson(res, status, payload) {
   res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
