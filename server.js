@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { ensureCollections, ensureDatabase, readDb, resetDb, writeDb } = require("./repositories/jsonDatabase");
+const profilesRepository = require("./repositories/profilesRepository");
 
 const PORT = Number(process.env.PORT || 4174);
 const ROOT = __dirname;
@@ -154,24 +155,6 @@ function requireAdmin(req, db) {
   return session;
 }
 
-function applyProfileFilters(profiles, query) {
-  return profiles.filter((profile) => {
-    if (profile.visibilityStatus !== "public") return false;
-    if (query.profileId && !profile.id.toLowerCase().includes(query.profileId.toLowerCase())) return false;
-    if (query.gender && query.gender !== "all" && profile.gender !== query.gender) return false;
-    if (query.location && query.location !== "all" && profile.location !== query.location) return false;
-    if (query.education && query.education !== "all" && profile.education !== query.education) return false;
-    if (query.salary && query.salary !== "all" && profile.salaryRange !== query.salary) return false;
-    if (query.fitness && query.fitness !== "all" && profile.fitness !== query.fitness) return false;
-    if (query.job && !String(profile.job || "").toLowerCase().includes(query.job.toLowerCase())) return false;
-    if (query.age && query.age !== "all") {
-      const [min, max] = query.age.split("-").map(Number);
-      if (profile.age < min || profile.age > max) return false;
-    }
-    return true;
-  });
-}
-
 function serveStatic(req, res, pathname) {
   const requested = pathname === "/" ? "/index.html" : pathname;
   const filePath = path.normalize(path.join(PUBLIC_DIR, requested));
@@ -216,15 +199,14 @@ async function handleApi(req, res, url) {
     const viewerMobile = url.searchParams.get("viewerMobile");
     const hasContactAccess = hasActiveSubscription(db, viewerMobile);
     const blockedIds = new Set(db.blocks.filter((item) => item.mobile === viewerMobile).map((item) => item.profileId));
-    const profiles = applyProfileFilters(db.profiles, Object.fromEntries(url.searchParams.entries()))
-      .filter((profile) => !blockedIds.has(profile.id));
+    const profiles = profilesRepository.listPublicProfiles(db, Object.fromEntries(url.searchParams.entries()), blockedIds);
     return sendJson(res, 200, { profiles: profiles.map((profile) => publicProfile(profile, hasContactAccess)) });
   }
 
   if (req.method === "GET" && pathname.startsWith("/api/profiles/")) {
     const id = pathname.split("/").pop();
     const viewerMobile = url.searchParams.get("viewerMobile");
-    const profile = db.profiles.find((item) => item.id === id);
+    const profile = profilesRepository.findProfileById(db, id);
     if (!profile) return sendError(res, 404, "Profile not found");
     if (profile.visibilityStatus !== "public") return sendError(res, 403, "Profile is not public");
     return sendJson(res, 200, { profile: publicProfile(profile, hasActiveSubscription(db, viewerMobile)) });
@@ -240,32 +222,28 @@ async function handleApi(req, res, url) {
       .filter((item) => item.fromMobile === mobile)
       .map((interest) => ({
         ...interest,
-        profile: db.profiles.find((profileItem) => profileItem.id === interest.toProfileId) || null
+        profile: profilesRepository.findProfileById(db, interest.toProfileId)
       }));
-    const profile = db.profiles.find((item) => {
-      return (user && item.userId === user.id) || item.mobile === mobile;
-    }) || null;
+    const profile = profilesRepository.findProfileForUserOrMobile(db, user, mobile);
     const receivedInterests = profile
       ? db.interests
           .filter((item) => item.toProfileId === profile.id)
           .map((interest) => ({
             ...interest,
-            fromProfile: db.profiles.find((profileItem) => {
-              return profileItem.mobile === interest.fromMobile || profileItem.userId === interest.fromMobile;
-            }) || null
+            fromProfile: profilesRepository.findProfileByMobileOrUserId(db, interest.fromMobile)
           }))
       : [];
     const shortlists = db.shortlists
       .filter((item) => item.mobile === mobile)
       .map((shortlist) => ({
         ...shortlist,
-        profile: db.profiles.find((profileItem) => profileItem.id === shortlist.profileId) || null
+        profile: profilesRepository.findProfileById(db, shortlist.profileId)
       }));
     const blocks = db.blocks
       .filter((item) => item.mobile === mobile)
       .map((block) => ({
         ...block,
-        profile: db.profiles.find((profileItem) => profileItem.id === block.profileId) || null
+        profile: profilesRepository.findProfileById(db, block.profileId)
       }));
     return sendJson(res, 200, {
       user,
@@ -286,7 +264,7 @@ async function handleApi(req, res, url) {
     if (!body.mobile) return sendError(res, 400, "mobile is required");
     const user = db.users.find((item) => item.mobile === body.mobile);
     if (!user || !user.mobileVerified) return sendError(res, 403, "Verify OTP before updating profile");
-    const profile = db.profiles.find((item) => item.userId === user.id || item.mobile === body.mobile);
+    const profile = profilesRepository.findProfileForUserOrMobile(db, user, body.mobile);
     if (!profile) return sendError(res, 404, "Profile not found for this mobile");
 
     applyProfileUpdates(profile, body);
@@ -388,7 +366,7 @@ async function handleApi(req, res, url) {
       createdAt: new Date().toISOString()
     };
 
-    db.profiles.push(profile);
+    profilesRepository.addProfile(db, profile);
     writeDb(db);
     return sendJson(res, 201, { message: "Profile created and sent to admin approval", profile });
   }
@@ -415,7 +393,7 @@ async function handleApi(req, res, url) {
   if (req.method === "POST" && pathname === "/api/shortlists") {
     const body = await parseBody(req);
     if (!body.mobile || !body.profileId) return sendError(res, 400, "mobile and profileId are required");
-    const profile = db.profiles.find((item) => item.id === body.profileId && item.visibilityStatus === "public");
+    const profile = profilesRepository.findPublicProfileById(db, body.profileId);
     if (!profile) return sendError(res, 404, "Public profile not found");
     const existing = db.shortlists.find((item) => item.mobile === body.mobile && item.profileId === body.profileId);
     if (existing) return sendJson(res, 200, { message: "Profile already saved", shortlist: existing });
@@ -446,7 +424,7 @@ async function handleApi(req, res, url) {
   if (req.method === "POST" && pathname === "/api/blocks") {
     const body = await parseBody(req);
     if (!body.mobile || !body.profileId) return sendError(res, 400, "mobile and profileId are required");
-    const profile = db.profiles.find((item) => item.id === body.profileId && item.visibilityStatus === "public");
+    const profile = profilesRepository.findPublicProfileById(db, body.profileId);
     if (!profile) return sendError(res, 404, "Public profile not found");
     const existing = db.blocks.find((item) => item.mobile === body.mobile && item.profileId === body.profileId);
     if (existing) return sendJson(res, 200, { message: "Profile already hidden", block: existing });
@@ -518,13 +496,13 @@ async function handleApi(req, res, url) {
 
   if (req.method === "GET" && pathname === "/api/admin/dashboard") {
     if (!requireAdmin(req, db)) return sendError(res, 401, "Admin login required");
-    const reviewProfiles = db.profiles.filter((item) => item.verificationStatus !== "approved").length;
+    const reviewProfiles = profilesRepository.countProfilesForReview(db);
     const reportsOpen = db.reports.filter((item) => item.status === "open").length;
-    const publicProfiles = db.profiles.filter((item) => item.visibilityStatus === "public").length;
+    const publicProfiles = profilesRepository.countPublicProfiles(db);
     const revenuePaise = db.payments.filter((item) => item.status === "paid").reduce((sum, item) => sum + item.amountPaise, 0);
     return sendJson(res, 200, {
       stats: { pendingProfiles: reviewProfiles, reportsOpen, publicProfiles, revenueRupees: revenuePaise / 100 },
-      pending: db.profiles.filter((item) => item.verificationStatus !== "approved"),
+      pending: profilesRepository.listProfilesForReview(db),
       reports: db.reports
     });
   }
@@ -533,7 +511,7 @@ async function handleApi(req, res, url) {
     if (!requireAdmin(req, db)) return sendError(res, 401, "Admin login required");
     const id = pathname.split("/").pop();
     const body = await parseBody(req);
-    const profile = db.profiles.find((item) => item.id === id);
+    const profile = profilesRepository.findProfileById(db, id);
     if (!profile) return sendError(res, 404, "Profile not found");
 
     if (body.action === "approve") {
