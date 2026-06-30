@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ChennaiKalyanam App</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="shell-header">
+      <a class="brand" href="#browse">
+        <span>CK</span>
+        <strong>ChennaiKalyanam</strong>
+      </a>
+      <nav>
+        <a href="#browse">Browse</a>
+        <a href="#register">Register</a>
+        <a href="#account">Account</a>
+        <a href="#admin">Admin</a>
+        <a href="#qa">QA</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" id="browse">
+        <img src="./hero-family.png" alt="Tamil family viewing a matrimony profile">
+        <div>
+          <p class="eyebrow">Real Phase 1 app</p>
+          <h1>Affordable verified matrimony for Chennai families.</h1>
+          <p>Search public profiles, create a new profile, send interests, simulate payment, report suspicious profiles, and approve profiles from the admin panel.</p>
+        </div>
+      </section>
+
+      <section class="wisdom-strip" aria-label="Marriage guidance">
+        <article>
+          <p class="eyebrow">Thirukkural thought</p>
+          <strong>Look beyond wealth alone: character, kindness, and shared responsibility keep a family steady.</strong>
+        </article>
+        <article>
+          <p class="eyebrow">Parent advice</p>
+          <strong>Ask how the person handles pressure, money, health, elders, and disagreement.</strong>
+        </article>
+        <article>
+          <p class="eyebrow">Married couple note</p>
+          <strong>Good matches are built by daily respect, honest expectations, and willingness to adjust.</strong>
+        </article>
+      </section>
+
+      <section class="member-bar" aria-label="Current member">
+        <div>
+          <p class="eyebrow">Current member</p>
+          <strong id="memberMobile">Not verified</strong>
+          <span id="memberAccess">Contact access locked</span>
+        </div>
+        <label>Use mobile for browsing
+          <input id="viewerMobile" placeholder="+91 90000 00000">
+        </label>
+        <button id="loadAccount" type="button">Load account</button>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">AI search and filters</p>
+            <h2>Browse compact profile list</h2>
+          </div>
+          <button id="refreshProfiles" type="button">Refresh</button>
+        </div>
+        <div class="ai-search">
+          <label>Describe the match you want
+            <input id="aiSearchInput" placeholder="Example: groom in Chennai earning 10-20 LPA, regular fitness, non-smoker">
+          </label>
+          <button id="aiSearchButton" type="button">AI search</button>
+          <button id="clearAiSearch" class="secondary" type="button">Clear</button>
+          <p id="aiSearchSummary" class="status">Try salary, fitness, job, age, and location in one sentence. Bride/groom matching is automatic after login.</p>
+        </div>
+        <div class="filters">
+          <label>Profile ID
+            <input id="profileIdFilter" placeholder="CK1028">
+          </label>
+          <label>Age
+            <select id="ageFilter">
+              <option value="all">Any age</option>
+              <option value="21-26">21 to 26</option>
+              <option value="27-32">27 to 32</option>
+              <option value="33-40">33 to 40</option>
+            </select>
+          </label>
+          <label>Area
+            <select id="locationFilter">
+              <option value="all">All Chennai</option>
+              <option value="Velachery">Velachery</option>
+              <option value="Anna Nagar">Anna Nagar</option>
+              <option value="Tambaram">Tambaram</option>
+              <option value="T. Nagar">T. Nagar</option>
+            </select>
+          </label>
+          <label>Education
+            <select id="educationFilter">
+              <option value="all">Any education</option>
+              <option value="Engineering">Engineering</option>
+              <option value="MBA">MBA</option>
+              <option value="Medicine">Medicine</option>
+            </select>
+          </label>
+          <label>Salary
+            <select id="salaryFilter">
+              <option value="all">Any salary</option>
+              <option value="Not disclosed">Not disclosed</option>
+              <option value="Below Rs. 5 LPA">Below Rs. 5 LPA</option>
+              <option value="Rs. 5-10 LPA">Rs. 5-10 LPA</option>
+              <option value="Rs. 10-20 LPA">Rs. 10-20 LPA</option>
+              <option value="Rs. 20-50 LPA">Rs. 20-50 LPA</option>
+              <option value="Rs. 50 LPA+">Rs. 50 LPA+</option>
+            </select>
+          </label>
+          <label>Fitness
+            <select id="fitnessFilter">
+              <option value="all">Any lifestyle</option>
+              <option value="Not specified">Not specified</option>
+              <option value="Active lifestyle">Active lifestyle</option>
+              <option value="Regular fitness">Regular fitness</option>
+              <option value="Athletic">Athletic</option>
+              <option value="Health-focused">Health-focused</option>
+            </select>
+          </label>
+          <label>Job keyword
+            <input id="jobFilter" placeholder="IT, doctor, business">
+          </label>
+          <label>Sort by
+            <select id="sortFilter">
+              <option value="default">Default order</option>
+              <option value="salaryHigh">Salary high to low</option>
+              <option value="salaryLow">Salary low to high</option>
+              <option value="ageLow">Age low to high</option>
+              <option value="ageHigh">Age high to low</option>
+            </select>
+          </label>
+        </div>
+        <p id="profileStatus" class="status">Loading profiles...</p>
+        <div id="compareBar" class="compare-bar">
+          <span id="compareStatus">Select 2 profiles to compare</span>
+          <button id="compareProfiles" type="button">Compare</button>
+          <button id="clearCompare" class="secondary" type="button">Clear</button>
+        </div>
+        <div id="comparePanel" class="compare-panel" hidden></div>
+        <div id="profilesGrid" class="cards"></div>
+      </section>
+
+      <section class="panel" id="register">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Registration</p>
+            <h2>Create profile with OTP</h2>
+          </div>
+        </div>
+        <div class="two-column">
+          <form id="otpForm" class="form-card">
+            <h3>1. Verify mobile</h3>
+            <label>Mobile number
+              <input name="mobile" type="tel" placeholder="+91 90000 00000" required>
+            </label>
+            <button type="submit">Send demo OTP</button>
+            <label>OTP code
+              <input name="code" type="text" inputmode="numeric" placeholder="123456" required>
+            </label>
+            <button type="button" id="verifyOtp">Verify OTP</button>
+            <p id="otpStatus" class="status"></p>
+          </form>
+
+          <form id="profileForm" class="form-card">
+            <h3>2. Submit profile</h3>
+            <div class="grid-2">
+              <label>Full name
+                <input name="name" required>
+              </label>
+              <label>Profile for
+                <select name="profileFor">
+                  <option>Self</option>
+                  <option>Son</option>
+                  <option>Daughter</option>
+                  <option>Sibling</option>
+                </select>
+              </label>
+              <label>Gender
+                <select name="gender">
+                  <option>Bride</option>
+                  <option>Groom</option>
+                </select>
+              </label>
+              <label>Age
+                <input name="age" type="number" min="18" max="70" required>
+              </label>
+              <label>Area
+                <input name="location" placeholder="Velachery" required>
+              </label>
+              <label>Education
+                <input name="education" placeholder="Engineering" required>
+              </label>
+              <label>Job
+                <input name="job" placeholder="Software Engineer">
+              </label>
+              <label>Company name
+                <input name="companyName" placeholder="TCS, Zoho, Google">
+              </label>
+              <label>Income
+                <input name="income" placeholder="Rs. 8-10 LPA">
+              </label>
+              <label>Salary range
+                <select name="salaryRange">
+                  <option>Not disclosed</option>
+                  <option>Below Rs. 5 LPA</option>
+                  <option>Rs. 5-10 LPA</option>
+                  <option>Rs. 10-20 LPA</option>
+                  <option>Rs. 20-50 LPA</option>
+                  <option>Rs. 50 LPA+</option>
+                </select>
+              </label>
+              <label>Height
+                <input name="height" placeholder="5 ft 8 in">
+              </label>
+              <label>Photo URL
+                <input name="photoUrl" type="url" placeholder="https://example.com/photo.jpg">
+              </label>
+              <label>Fitness
+                <select name="fitness">
+                  <option>Not specified</option>
+                  <option>Active lifestyle</option>
+                  <option>Regular fitness</option>
+                  <option>Athletic</option>
+                  <option>Health-focused</option>
+                </select>
+              </label>
+              <label>Diet
+                <select name="diet">
+                  <option>Not specified</option>
+                  <option>Vegetarian</option>
+                  <option>Non-vegetarian</option>
+                  <option>Eggetarian</option>
+                  <option>Vegan</option>
+                </select>
+              </label>
+              <label>Smoking
+                <select name="smoking">
+                  <option>Not specified</option>
+                  <option>No</option>
+                  <option>Occasionally</option>
+                </select>
+              </label>
+              <label>Drinking
+                <select name="drinking">
+                  <option>Not specified</option>
+                  <option>No</option>
+                  <option>Occasionally</option>
+                </select>
+              </label>
+            </div>
+            <label>Family details
+              <textarea name="family" rows="3"></textarea>
+            </label>
+            <label>About profile
+              <textarea name="about" rows="3"></textarea>
+            </label>
+            <button type="submit">Create profile for admin approval</button>
+            <p id="profileCreateStatus" class="status"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="panel" id="account">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Account</p>
+            <h2>Interests and payment</h2>
+          </div>
+        </div>
+        <div class="account-grid">
+          <article class="form-card">
+            <h3>Account summary</h3>
+            <div id="accountSummary" class="summary-list">
+              <p class="status">Verify or enter a mobile number, then load account.</p>
+            </div>
+          </article>
+          <article class="form-card my-profile-card">
+            <h3>My profile</h3>
+            <div id="myProfileSummary" class="summary-list">
+              <p class="status">Load account to see profile status and completeness.</p>
+            </div>
+            <button id="fillEditProfile" class="secondary" type="button">Edit my profile</button>
+          </article>
+          <form id="interestForm" class="form-card">
+            <h3>Send interest</h3>
+            <label>Your mobile
+              <input name="fromMobile" placeholder="+91 90000 00000" required>
+            </label>
+            <label>To profile ID
+              <input name="toProfileId" placeholder="CK1028" required>
+            </label>
+            <label>Message
+              <textarea name="message" rows="2" maxlength="240" placeholder="We liked this profile. Please connect if interested."></textarea>
+            </label>
+            <button type="submit">Send message</button>
+            <p id="interestStatus" class="status"></p>
+          </form>
+          <article class="form-card">
+            <h3>Saved profiles</h3>
+            <div id="savedProfilesList" class="activity-list">
+              <p class="status">Save profiles from Browse to compare later.</p>
+            </div>
+          </article>
+          <article class="form-card">
+            <h3>Sent interests</h3>
+            <div id="sentInterestsList" class="activity-list">
+              <p class="status">Sent interests will appear here.</p>
+            </div>
+          </article>
+          <article class="form-card">
+            <h3>Received messages</h3>
+            <div id="receivedInterestsList" class="activity-list">
+              <p class="status">Messages from interested families will appear here.</p>
+            </div>
+          </article>
+          <article class="form-card">
+            <h3>Hidden profiles</h3>
+            <div id="hiddenProfilesList" class="activity-list">
+              <p class="status">Hidden profiles will appear here.</p>
+            </div>
+          </article>
+          <form id="paymentForm" class="form-card">
+            <h3>Demo payment</h3>
+            <label>Mobile
+              <input name="mobile" placeholder="+91 90000 00000" required>
+            </label>
+            <label>Plan
+              <select name="plan">
+                <option value="monthly">Monthly Rs. 199</option>
+                <option value="family">Family Rs. 499</option>
+              </select>
+            </label>
+            <button type="submit">Simulate successful payment</button>
+            <p id="paymentStatus" class="status"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="panel" id="editProfilePanel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Member profile</p>
+            <h2>Edit my profile</h2>
+          </div>
+        </div>
+        <form id="editProfileForm" class="form-card">
+          <div class="grid-2">
+            <label>Full name
+              <input name="name" required>
+            </label>
+            <label>Profile for
+              <select name="profileFor">
+                <option>Self</option>
+                <option>Son</option>
+                <option>Daughter</option>
+                <option>Sibling</option>
+              </select>
+            </label>
+            <label>Gender
+              <select name="gender">
+                <option>Bride</option>
+                <option>Groom</option>
+              </select>
+            </label>
+            <label>Age
+              <input name="age" type="number" min="18" max="70" required>
+            </label>
+            <label>Area
+              <input name="location" required>
+            </label>
+            <label>Education
+              <input name="education" required>
+            </label>
+            <label>Job
+              <input name="job">
+            </label>
+            <label>Company name
+              <input name="companyName">
+            </label>
+            <label>Income
+              <input name="income">
+            </label>
+            <label>Salary range
+              <select name="salaryRange">
+                <option>Not disclosed</option>
+                <option>Below Rs. 5 LPA</option>
+                <option>Rs. 5-10 LPA</option>
+                <option>Rs. 10-20 LPA</option>
+                <option>Rs. 20-50 LPA</option>
+                <option>Rs. 50 LPA+</option>
+              </select>
+            </label>
+            <label>Height
+              <input name="height">
+            </label>
+            <label>Photo URL
+              <input name="photoUrl" type="url">
+            </label>
+            <label>Fitness
+              <select name="fitness">
+                <option>Not specified</option>
+                <option>Active lifestyle</option>
+                <option>Regular fitness</option>
+                <option>Athletic</option>
+                <option>Health-focused</option>
+              </select>
+            </label>
+            <label>Diet
+              <select name="diet">
+                <option>Not specified</option>
+                <option>Vegetarian</option>
+                <option>Non-vegetarian</option>
+                <option>Eggetarian</option>
+                <option>Vegan</option>
+              </select>
+            </label>
+            <label>Smoking
+              <select name="smoking">
+                <option>Not specified</option>
+                <option>No</option>
+                <option>Occasionally</option>
+              </select>
+            </label>
+            <label>Drinking
+              <select name="drinking">
+                <option>Not specified</option>
+                <option>No</option>
+                <option>Occasionally</option>
+              </select>
+            </label>
+            <label>Horoscope
+              <select name="horoscope">
+                <option>Optional</option>
+                <option>Available</option>
+                <option>Not available</option>
+              </select>
+            </label>
+          </div>
+          <label>Family details
+            <textarea name="family" rows="3"></textarea>
+          </label>
+          <label>About profile
+            <textarea name="about" rows="3"></textarea>
+          </label>
+          <label>Partner preference
+            <textarea name="preference" rows="3"></textarea>
+          </label>
+          <button type="submit">Save changes for admin review</button>
+          <p id="editProfileStatus" class="status"></p>
+        </form>
+      </section>
+
+      <section class="panel" id="admin">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Admin</p>
+            <h2>Profile approval dashboard</h2>
+          </div>
+          <button id="refreshAdmin" type="button">Refresh admin</button>
+        </div>
+        <form id="adminLoginForm" class="admin-login">
+          <label>Admin PIN
+            <input name="pin" type="password" inputmode="numeric" placeholder="Demo PIN: 246810" required>
+          </label>
+          <button type="submit">Login admin</button>
+          <p id="adminLoginStatus" class="status">Admin actions are locked until login.</p>
+        </form>
+        <div id="adminStats" class="stats"></div>
+        <div id="adminList" class="admin-list"></div>
+      </section>
+
+      <section class="panel" id="qa">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Tester workspace</p>
+            <h2>QA checklist</h2>
+          </div>
+        </div>
+        <div class="qa-grid">
+          <label><input type="checkbox"> OTP rejects wrong code and accepts 123456.</label>
+          <label><input type="checkbox"> Profile creation is blocked before OTP verification.</label>
+          <label><input type="checkbox"> Newly created profile appears in admin review, not public search.</label>
+          <label><input type="checkbox"> Admin approval makes profile visible in Browse.</label>
+          <label><input type="checkbox"> Contact is locked for free users.</label>
+          <label><input type="checkbox"> Demo payment unlocks contact for the same mobile.</label>
+          <label><input type="checkbox"> Duplicate interest does not create a second interest.</label>
+          <label><input type="checkbox"> Report creates an open admin review item.</label>
+        </div>
+      </section>
+    </main>
+
+    <div id="profileModal" class="modal" hidden>
+      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+        <button id="closeProfileModal" class="modal-close" type="button" aria-label="Close profile details">x</button>
+        <div id="profileModalBody"></div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" hidden></div>
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "chennai-kalyanam-real-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dependency-free Phase 1 web app and API for ChennaiKalyanam.",
+  "scripts": {
+    "start": "node server.js",
+    "test:smoke": "node tests/smoke-test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
