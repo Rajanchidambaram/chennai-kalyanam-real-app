@@ -95,6 +95,34 @@ function profileCompleteness(profile) {
   };
 }
 
+function accountNextStep(user, profile, activeSubscription) {
+  if (!user?.mobileVerified) {
+    return { code: "verify_mobile", label: "Verify mobile to create your profile." };
+  }
+
+  if (!profile) {
+    return { code: "create_profile", label: "Create your profile for admin approval." };
+  }
+
+  if (profile.verificationStatus === "pending") {
+    return { code: "awaiting_review", label: "Profile submitted. Admin approval is pending." };
+  }
+
+  if (profile.verificationStatus === "correction_requested") {
+    return { code: "edit_profile", label: "Admin requested changes. Edit and resubmit your profile." };
+  }
+
+  if (profile.verificationStatus === "rejected") {
+    return { code: "contact_support", label: "Profile was rejected. Contact admin support before resubmitting." };
+  }
+
+  if (!activeSubscription) {
+    return { code: "unlock_contact", label: "Profile is live. Payment unlocks contact details." };
+  }
+
+  return { code: "browse_matches", label: "Profile is live and contact access is active." };
+}
+
 function applyProfileUpdates(profile, body) {
   const editableFields = [
     "name",
@@ -249,6 +277,8 @@ async function handleApi(req, res, url) {
       user,
       profile,
       profileCompleteness: profileCompleteness(profile),
+      canCreateProfile: Boolean(user?.mobileVerified && !profile),
+      nextStep: accountNextStep(user, profile, activeSubscription),
       interests,
       receivedInterests,
       shortlists,
@@ -333,6 +363,10 @@ async function handleApi(req, res, url) {
     const user = db.users.find((item) => item.mobile === body.mobile);
     if (!user || !user.mobileVerified) {
       return sendError(res, 403, "Verify OTP before creating a profile");
+    }
+    const existingProfile = profilesRepository.findProfileForMobile(db, body.mobile);
+    if (existingProfile) {
+      return sendError(res, 409, `This mobile already has profile ${existingProfile.id}. Please edit your profile instead.`);
     }
 
     const profile = {

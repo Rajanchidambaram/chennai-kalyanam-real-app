@@ -35,6 +35,10 @@ function findProfileForUserOrMobile(db, user, mobile) {
   }) || null;
 }
 
+function findProfileForMobile(db, mobile) {
+  return db.profiles.find((profile) => profile.mobile === mobile) || null;
+}
+
 function findProfileByMobileOrUserId(db, value) {
   return db.profiles.find((profile) => profile.mobile === value || profile.userId === value) || null;
 }
@@ -62,6 +66,7 @@ module.exports = {
   countPublicProfiles,
   findProfileById,
   findProfileByMobileOrUserId,
+  findProfileForMobile,
   findProfileForUserOrMobile,
   findPublicProfileById,
   listProfilesForReview,

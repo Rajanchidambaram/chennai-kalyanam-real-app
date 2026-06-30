@@ -75,6 +75,20 @@ function syncMemberBar() {
   $("#memberAccess").textContent = state.contactAccess ? "Contact access active" : "Contact access locked";
 }
 
+function syncProfileCreationState(account = state.account) {
+  const submitButton = $("#profileForm button[type='submit']");
+  if (!submitButton) return;
+
+  if (!account) {
+    submitButton.disabled = false;
+    submitButton.textContent = "Create profile for admin approval";
+    return;
+  }
+
+  submitButton.disabled = !account.canCreateProfile;
+  submitButton.textContent = account.canCreateProfile ? "Create profile for admin approval" : "Profile already created";
+}
+
 function savedProfileIds() {
   return new Set((state.account?.shortlists || []).map((item) => item.profileId));
 }
@@ -377,6 +391,7 @@ async function loadAccount() {
     <span><strong>User</strong>${data.user ? data.user.status : "Not created"}</span>
     <span><strong>Mobile OTP</strong>${data.user?.mobileVerified ? "Verified" : "Not verified"}</span>
     <span><strong>Profile</strong>${data.profile ? `${data.profile.id} - ${data.profile.verificationStatus}` : "No profile"}</span>
+    <span><strong>Next step</strong>${data.nextStep?.label || "Load account to continue"}</span>
     <span><strong>Interests sent</strong>${data.interests.length}</span>
     <span><strong>Received messages</strong>${data.receivedInterests.length}</span>
     <span><strong>Saved profiles</strong>${data.shortlists.length}</span>
@@ -404,6 +419,13 @@ async function loadAccount() {
   } else {
     $("#myProfileSummary").innerHTML = '<p class="status">No profile yet. Create one with OTP verification.</p>';
   }
+
+  syncProfileCreationState(data);
+  $("#profileCreateStatus").textContent = data.canCreateProfile
+    ? "Verified mobile is ready for one profile creation."
+    : data.profile
+      ? `Profile ${data.profile.id} already exists for this mobile. Use Edit my profile for changes.`
+      : data.nextStep?.label || "";
 
   renderMemberActivity(data);
 
@@ -781,11 +803,15 @@ $("#profileForm").addEventListener("submit", async (event) => {
   try {
     const profile = formJson(event.currentTarget);
     profile.mobile = state.mobile || formJson($("#otpForm")).mobile;
+    if (state.account?.profile) {
+      throw new Error(`Profile ${state.account.profile.id} already exists. Use Edit my profile.`);
+    }
     const result = await api("/api/profiles", {
       method: "POST",
       body: JSON.stringify(profile)
     });
     $("#profileCreateStatus").textContent = `${result.profile.id} created. It is hidden until admin approval.`;
+    syncProfileCreationState({ ...state.account, canCreateProfile: false, profile: result.profile });
     event.currentTarget.reset();
     await loadAccount();
     await loadAdmin();
