@@ -88,10 +88,14 @@ You can delete `data/db.json` to reset the app back to seed data.
 
 ## Production Upgrade Path
 
-This app proves the flow. For production, replace:
+This app proves the flow. See `ROADMAP.md` for the full launch plan.
+
+For production, replace:
 
 - JSON file with PostgreSQL
 - Demo OTP with MSG91, Firebase Auth, or Twilio
 - Demo payment with Razorpay order + webhook verification
 - No-login admin with protected admin authentication
 - Local hosting with a cloud server
+
+Copy `.env.example` to `.env` when moving toward production configuration.
